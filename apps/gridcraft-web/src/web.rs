@@ -158,6 +158,10 @@ impl eframe::App for WebShell {
             });
         }
         self.app.logic(ctx);
+        // The page's commands ran in `logic`: what they changed is the host's, not the user's.
+        if let Some(bridge) = &self.bridge {
+            bridge.after_logic(&self.app);
+        }
         // Store changed preferences straight away: a reload or closed tab runs no exit code (#1562).
         let changed = self.prefs.changed(&self.app);
         if !changed.is_empty() {
@@ -182,7 +186,8 @@ impl eframe::App for WebShell {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.app.ui(ui);
         if let Some(bridge) = &self.bridge {
-            bridge.sync(&mut self.app);
+            let ctx = ui.ctx().clone();
+            bridge.sync(&mut self.app, &ctx);
         }
     }
 }
