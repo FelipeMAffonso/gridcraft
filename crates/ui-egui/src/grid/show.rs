@@ -61,6 +61,19 @@ pub fn show(app: &mut SheetApp, ui: &mut egui::Ui) {
     let Some(sh) = wb.sheet(si) else { return };
     let sel = d.selection.clone();
     let place = (d.uid, si);
+    // Felipe's fork: the grid's AccessKit node names the active cell, so a screen reader hears its address, what it
+    // shows and its formula on each move (prepara-sim-kit kit/craft-host/CRAFT-A11Y-SCOPE.md; grid/a11y.rs).
+    {
+        let typing = app.editor.as_ref().filter(|e| e.doc == d.uid && e.sheet_uid == sh.uid.get() && e.cell == sel.active).map(|e| e.text.as_str());
+        let (label, value, description) = super::a11y::cell_speech(&wb, sh, sel.active, typing);
+        ui.ctx().accesskit_node_builder(resp.id, |node| {
+            node.set_label(label);
+            node.set_value(value);
+            if let Some(description) = description {
+                node.set_description(description);
+            }
+        });
+    }
     let mut view = app.view();
     // Page Layout view: pages on a desk, rulers above and left of the headings.
     let paper = sh.view == gridcraft_engine::model::SheetViewMode::PageLayout;
